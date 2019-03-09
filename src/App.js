@@ -3,7 +3,6 @@ import XMLParser from 'react-xml-parser';
 import html2canvas from "html2canvas";
 import './App.css';
 import { mockxml } from "./mockxml.js";
-import { saveAs } from './utils';
 class App extends Component {
   state = {
     parsed: {},
@@ -14,10 +13,27 @@ class App extends Component {
     this.parseXML(mockxml);
   }
 
+  saveAs = (uri, filename) => {
+    const link = document.createElement('a');
+    console.log('LINK CREATED', link);
+    if (typeof link.download === 'string') {
+      link.href = uri;
+      link.download = filename;
+      //Firefox requires the link to be in the body
+      document.body.appendChild(link);
+      //simulate click
+      link.click();
+      //remove the link when done
+      document.body.removeChild(link);
+    } else {
+      window.open(uri);
+    }
+  }
+
   saveScreenShot = () => {
-    const input = document.getElementById('screenshot-element');
-    html2canvas(input).then((canvas) => {
-      saveAs(canvas.toDataURL(), 'screenshot.png');
+    html2canvas(document.querySelector('#apscr')).then((canvas) => {
+      const dataUrl = canvas.toDataURL("image/png");
+      this.saveAs(dataUrl, 'screenshot.png');
     });
   }
 
@@ -72,7 +88,7 @@ class App extends Component {
     return (
       <div className="App" >
         <div className="app-container">
-          <div id='screenshot-element'>
+          <div id='apscr'>
             {Table}
           </div>
           <div className="app-footer">
