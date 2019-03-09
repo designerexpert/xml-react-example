@@ -5,44 +5,80 @@ import './App.css';
 import { mockxml } from "./mockxml.js";
 import { saveAs } from './utils';
 class App extends Component {
+  state = {
+    parsed: {},
+  }
+
+  componentDidMount() {
+    // Receive Data from HTTP Request or File...
+    this.parseXML(mockxml);
+  }
+
   saveScreenShot = () => {
     const input = document.getElementById('screenshot-element');
     html2canvas(input).then((canvas) => {
       saveAs(canvas.toDataURL(), 'screenshot.png');
     });
   }
-  render() {
-    console.log('MOCK XML', mockxml)
-    console.log('MOCK XML type', typeof mockxml)
-    const parsedXML = new XMLParser().parseFromString(mockxml);
-    console.log('PARSED XML HOPE', parsedXML)
-    const BooksTableHeaders = [];
-    const BooksTable = parsedXML.children.map((item, index) => {
-      const bookId = item.id;
-      const TableColumns = item.children.map((tItem, tIndx) => {
-        if (index === 0) {
-          BooksTableHeaders.push(
-            <th key={'HEAD_KEY' + tIndx} style={{ backgroundColor: "black", color: "white" }}>
-              {tItem.name.split(/[_-]/g).join(' ').toUpperCase()}
-            </th>
+
+  parseXML = (source) => {
+    const parsed = new XMLParser().parseFromString(source);
+    this.setState({ parsed })
+  }
+
+  generateTable = (source) => {
+    if (Array.isArray(source.children)) {
+      const HeadersRow = [];
+      const DataRows = source.children.map((item, index) => {
+        const ID = item.id;
+        const TableColumns = item.children.map((tItem, tIndx) => {
+          if (index === 0) {
+            HeadersRow.push(
+              <th key={`header_${tIndx}`}>
+                {tItem.name.split(/[_-]/g).join(' ').toUpperCase()}
+              </th>
+            )
+          }
+          return (
+            <td key={`${ID}_${tIndx}`} >
+              {tItem.value}
+            </td>
           )
-        }
-        return (<td key={`TD_${bookId}_${Date.now()}_${tIndx}`} style={{ color: "black", border: "1px solid black" }}>
-          {tItem.value}
-        </td>)
+        })
+        return (<tr key={`${ID}_${index}`}>{TableColumns}</tr>)
       })
-      return (<tr key={`TR_${bookId}_${Date.now()}_${index}`} style={{ border: "1px solid black" }}>{TableColumns}</tr>)
-    })
+      return (
+        <table>
+          <thead>
+            <tr>
+              {HeadersRow}
+            </tr>
+          </thead>
+          <tbody>
+            {DataRows}
+          </tbody>
+        </table>
+      );
+    } else {
+      return null;
+    }
+  }
+
+  render() {
+    const { parsed } = this.state;
+
+    const Table = this.generateTable(parsed);
 
     return (
       <div className="App" >
-        <div id='screenshot-element' style={{ width: "100%" }}>
-          <table>
-            {BooksTableHeaders}
-            {BooksTable}
-          </table>
+        <div className="app-container">
+          <div id='screenshot-element'>
+            {Table}
+          </div>
+          <div className="app-footer">
+            <button onClick={this.saveScreenShot} >SAVE SCREENSHOT</button>
+          </div>
         </div>
-        <button onClick={this.saveScreenShot}>SAVE SCREENSHOT</button>
       </div>
     );
   }
